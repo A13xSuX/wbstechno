@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Service - Поиск заказов</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #4a5568;
+        }
+        
+        .search-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        
+        #orderId {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        
+        #orderId:focus {
+            border-color: #667eea;
+        }
+        
+        button {
+            padding: 15px 25px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #5a67d8;
+        }
+        
+        .result {
+            display: none;
+            background: #f7fafc;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .error {
+            display: none;
+            background: #fed7d7;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 4px solid #e53e3e;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+        
+        .order-info {
+            margin-bottom: 15px;
+        }
+        
+        .order-info h3 {
+            color: #4a5568;
+            margin-bottom: 10px;
+        }
+        
+        .order-details {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .items-list {
+            margin-top: 10px;
+        }
+        
+        .item {
+            background: #f7fafc;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            border-left: 3px solid #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Поиск заказа</h1>
+        
+        <div class="search-form">
+            <input 
+                type="text" 
+                id="orderId" 
+                placeholder="Введите ID заказа (например: test-order-123)"
+                autocomplete="off"
+            >
+            <button onclick="searchOrder()">Найти заказ</button>
+        </div>
+        
+        <div id="loading" class="loading">
+            ⏳ Ищем заказ...
+        </div>
+        
+        <div id="error" class="error"></div>
+        
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        function searchOrder() {
+            const orderId = document.getElementById('orderId').value.trim();
+            const resultDiv = document.getElementById('result');
+            const errorDiv = document.getElementById('error');
+            const loadingDiv = document.getElementById('loading');
+            
+            // Скрываем предыдущие результаты
+            resultDiv.style.display = 'none';
+            errorDiv.style.display = 'none';
+            loadingDiv.style.display = 'block';
+            
+            if (!orderId) {
+                showError('Пожалуйста, введите ID заказа');
+                return;
+            }
+            
+            // Делаем запрос к API
+            fetch(`http://localhost:8080/order/${orderId}`)
+                .then(response => {
+                    loadingDiv.style.display = 'none';
+                    
+                    if (!response.ok) {
+                        if (response.status === 404) {
+                            throw new Error('Заказ не найден');
+                        }
+                        throw new Error('Ошибка сервера');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    displayOrder(data);
+                })
+                .catch(error => {
+                    showError(error.message);
+                });
+        }
+        
+        function displayOrder(order) {
+            const resultDiv = document.getElementById('result');
+            const errorDiv = document.getElementById('error');
+            
+            errorDiv.style.display = 'none';
+            
+            resultDiv.innerHTML = `
+                <div class="order-info">
+                    <h3>📦 Информация о заказе</h3>
+                    <div class="order-details">
+                        <p><strong>ID:</strong> ${order.order_uid}</p>
+                        <p><strong>Трек номер:</strong> ${order.track_number}</p>
+                        <p><strong>Статус:</strong> Обработан</p>
+                        <p><strong>Дата создания:</strong> ${new Date(order.date_created).toLocaleString('ru-RU')}</p>
+                    </div>
+                </div>
+                
+                <div class="order-info">
+                    <h3>🚚 Доставка</h3>
+                    <div class="order-details">
+                        <p><strong>Получатель:</strong> ${order.delivery.name}</p>
+                        <p><strong>Телефон:</strong> ${order.delivery.phone}</p>
+                        <p><strong>Адрес:</strong> ${order.delivery.city}, ${order.delivery.address}</p>
+                        <p><strong>Почтовый индекс:</strong> ${order.delivery.zip}</p>
+                        <p><strong>Email:</strong> ${order.delivery.email}</p>
+                    </div>
+                </div>
+                
+                <div class="order-info">
+                    <h3>💳 Оплата</h3>
+                    <div class="order-details">
+                        <p><strong>Транзакция:</strong> ${order.payment.transaction}</p>
+                        <p><strong>Сумма:</strong> ${order.payment.amount} ${order.payment.currency}</p>
+                        <p><strong>Провайдер:</strong> ${order.payment.provider}</p>
+                        <p><strong>Банк:</strong> ${order.payment.bank}</p>
+                    </div>
+                </div>
+                
+                <div class="order-info">
+                    <h3>🛍️ Товары (${order.items.length})</h3>
+                    <div class="items-list">
+                        ${order.items.map(item => `
+                            <div class="item">
+                                <p><strong>${item.name}</strong> (${item.brand})</p>
+                                <p>Цена: $${item.price} | Размер: ${item.size}</p>
+                                <p>Артикул: ${item.chrt_id}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            
+            resultDiv.style.display = 'block';
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            const loadingDiv = document.getElementById('loading');
+            const resultDiv = document.getElementById('result');
+            
+            loadingDiv.style.display = 'none';
+            resultDiv.style.display = 'none';
+            
+            errorDiv.innerHTML = `
+                <strong>❌ Ошибка:</strong> ${message}
+                <br><br>
+                <small>Попробуйте следующие ID для теста:</small>
+                <br>
+                <small>- test-order-123</small><br>
+                <small>- test-cache-1</small><br>
+                <small>- test_without_cache</small>
+            `;
+            errorDiv.style.display = 'block';
+        }
+        
+        // Поиск при нажатии Enter
+        document.getElementById('orderId').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchOrder();
+            }
+        });
+    </script>
+</body>
+</html>
