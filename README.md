@@ -40,12 +40,12 @@ Kafka Broker: localhost:9092
 
 Zookeeper: localhost:2181
 
-## Перейдите в папку проекта
+### 2. Перейдите в папку проекта
 ```cd order-service```
 
-## Установите зависимости
+### 3. Установите зависимости
 ```go mod download```
 
-## Запустите сервис
+### 4. Запустите сервис
 ```go run cmd/orderservice/main.go```
 
