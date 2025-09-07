@@ -9,7 +9,7 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func StartKafkaConsumer(ctx context.Context, cfg config.KafkaConfig, orderService *service.OrderService) {
+func StartKafkaConsumer(ctx context.Context, cfg config.KafkaConfig, orderService service.OrderProcessor) {
 	reader := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:  cfg.Brokers,
 		Topic:    cfg.Topic,
@@ -22,7 +22,6 @@ func StartKafkaConsumer(ctx context.Context, cfg config.KafkaConfig, orderServic
 	log.Printf("Подписались на топик: %s", cfg.Topic)
 
 	for {
-		// Проверяем контекст перед чтением
 		if ctx.Err() != nil {
 			log.Println("Kafka consumer остановлен по контексту")
 			return

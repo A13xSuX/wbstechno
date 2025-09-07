@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-func StartHTTPServer(ctx context.Context, orderService *service.OrderService, port string) {
+func StartHTTPServer(ctx context.Context, orderService service.OrderService, port string) {
 	server := &http.Server{
 		Addr:    port,
 		Handler: nil,
@@ -34,7 +34,6 @@ func StartHTTPServer(ctx context.Context, orderService *service.OrderService, po
 		log.Println("Останавливаем HTTP сервер")
 
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-
 		defer cancel()
 
 		if err := server.Shutdown(shutdownCtx); err != nil {
@@ -54,7 +53,8 @@ func StartHTTPServer(ctx context.Context, orderService *service.OrderService, po
 	}
 }
 
-func orderHandler(orderService *service.OrderService) http.HandlerFunc {
+// ИСПРАВЛЕНО: service.OrderService вместо service.OrderServiceImpl
+func orderHandler(orderService service.OrderService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -88,7 +88,8 @@ func orderHandler(orderService *service.OrderService) http.HandlerFunc {
 	}
 }
 
-func cacheHandler(orderService *service.OrderService) http.HandlerFunc {
+// ИСПРАВЛЕНО: service.OrderService вместо service.OrderServiceImpl
+func cacheHandler(orderService service.OrderService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -107,7 +108,8 @@ func cacheHandler(orderService *service.OrderService) http.HandlerFunc {
 	}
 }
 
-func healthHandler(orderService *service.OrderService) http.HandlerFunc {
+// ИСПРАВЛЕНО: service.OrderService вместо service.OrderServiceImpl
+func healthHandler(orderService service.OrderService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -138,20 +140,17 @@ func healthHandler(orderService *service.OrderService) http.HandlerFunc {
 
 func staticHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Отдаем index.html для корневого пути
 		if r.URL.Path == "/" {
 			http.ServeFile(w, r, "static/index.html")
 			return
 		}
 
-		// Проверяем, что запрашивается статический файл
 		ext := filepath.Ext(r.URL.Path)
 		if ext == ".html" || ext == ".css" || ext == ".js" || ext == ".png" || ext == ".jpg" {
 			http.ServeFile(w, r, "static"+r.URL.Path)
 			return
 		}
 
-		// Для всех остальных путей отдаем 404
 		http.NotFound(w, r)
 	}
 }

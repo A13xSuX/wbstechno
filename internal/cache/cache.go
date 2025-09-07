@@ -14,16 +14,18 @@ type CachedOrder struct {
 	CreatedAt time.Time
 }
 
+// OrderCache реализация интерфейса Cache
 type OrderCache struct {
 	cache           *sync.Map
 	cacheTimestamps map[string]time.Time
 	mutex           sync.RWMutex
 	maxSize         int
-	ttl             time.Duration //для инвалидации
+	ttl             time.Duration
 	stopChan        chan struct{}
 }
 
-func NewOrderCache(maxSize int, ttl time.Duration) *OrderCache {
+// NewOrderCache создает новый кэш
+func NewOrderCache(maxSize int, ttl time.Duration) Cache {
 	cache := &OrderCache{
 		cache:           &sync.Map{},
 		cacheTimestamps: make(map[string]time.Time),
@@ -32,30 +34,12 @@ func NewOrderCache(maxSize int, ttl time.Duration) *OrderCache {
 		stopChan:        make(chan struct{}),
 	}
 
-	//горутина для очистки устаревших записей
 	go cache.startCleanupWorker()
 
 	return cache
 }
 
-func (oc *OrderCache) startCleanupWorker() {
-	ticker := time.NewTicker(5 * time.Minute)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			oc.Cleanup(oc.ttl)
-		case <-oc.stopChan:
-			return
-		}
-	}
-}
-func (oc *OrderCache) Stop() {
-	close(oc.stopChan)
-	log.Println("Кэш остановлен")
-}
-
+// Get возвращает заказ из кэша
 func (oc *OrderCache) Get(orderUID string) (database.Order, bool) {
 	if cached, ok := oc.cache.Load(orderUID); ok {
 		if cachedOrder, ok := cached.(CachedOrder); ok {
@@ -69,6 +53,7 @@ func (oc *OrderCache) Get(orderUID string) (database.Order, bool) {
 	return database.Order{}, false
 }
 
+// Set добавляет заказ в кэш
 func (oc *OrderCache) Set(order database.Order) {
 	if oc.Size() >= oc.maxSize {
 		oc.removeOldest()
@@ -86,11 +71,62 @@ func (oc *OrderCache) Set(order database.Order) {
 	oc.mutex.Unlock()
 }
 
+// Delete удаляет заказ из кэша
 func (oc *OrderCache) Delete(orderUID string) {
 	oc.cache.Delete(orderUID)
 	oc.mutex.Lock()
 	delete(oc.cacheTimestamps, orderUID)
 	oc.mutex.Unlock()
+}
+
+// Size возвращает размер кэша
+func (oc *OrderCache) Size() int {
+	count := 0
+	oc.cache.Range(func(key, value interface{}) bool {
+		count++
+		return true
+	})
+	return count
+}
+
+// Cleanup очищает устаревшие записи
+func (oc *OrderCache) Cleanup(ttl time.Duration) {
+	oc.mutex.Lock()
+	defer oc.mutex.Unlock()
+
+	now := time.Now()
+	for orderUID, createdAt := range oc.cacheTimestamps {
+		if now.Sub(createdAt) > ttl {
+			oc.cache.Delete(orderUID)
+			delete(oc.cacheTimestamps, orderUID)
+		}
+	}
+}
+
+// Stop останавливает кэш
+func (oc *OrderCache) Stop() {
+	close(oc.stopChan)
+	log.Println("Кэш остановлен")
+}
+
+// Range итерируется по элементам кэша
+func (oc *OrderCache) Range(f func(key, value interface{}) bool) {
+	oc.cache.Range(f)
+}
+
+// Вспомогательные методы
+func (oc *OrderCache) startCleanupWorker() {
+	ticker := time.NewTicker(5 * time.Minute)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			oc.Cleanup(oc.ttl)
+		case <-oc.stopChan:
+			return
+		}
+	}
 }
 
 func (oc *OrderCache) removeOldest() {
@@ -117,29 +153,8 @@ func (oc *OrderCache) removeOldest() {
 	delete(oc.cacheTimestamps, oldestKey)
 }
 
-func (oc *OrderCache) Size() int {
-	count := 0
-	oc.cache.Range(func(key, value interface{}) bool {
-		count++
-		return true
-	})
-	return count
-}
-
-func (oc *OrderCache) Cleanup(ttl time.Duration) {
-	oc.mutex.Lock()
-	defer oc.mutex.Unlock()
-
-	now := time.Now()
-	for orderUID, createdAt := range oc.cacheTimestamps {
-		if now.Sub(createdAt) > ttl {
-			oc.cache.Delete(orderUID)
-			delete(oc.cacheTimestamps, orderUID)
-		}
-	}
-}
-
-func RestoreCacheFromDB(db *sql.DB, cache *OrderCache, limit int) error {
+// RestoreCacheFromDB реализация интерфейса CacheRestorer
+func RestoreCacheFromDB(db *sql.DB, cache Cache, limit int) error {
 	fmt.Printf("Восстановление кэша, лимит: %d\n", limit)
 	query := `
 		SELECT o.order_uid, o.track_number, o.entry, o.locale, o.internal_signature, 
@@ -224,8 +239,4 @@ func loadOrderItems(db *sql.DB, order *database.Order) error {
 
 	order.Items = items
 	return nil
-}
-
-func (oc *OrderCache) Range(f func(key, value interface{}) bool) {
-	oc.cache.Range(f)
 }
