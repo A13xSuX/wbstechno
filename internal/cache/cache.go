@@ -18,18 +18,51 @@ type OrderCache struct {
 	cache           *sync.Map
 	cacheTimestamps map[string]time.Time
 	mutex           sync.RWMutex
+	maxSize         int
+	ttl             time.Duration //для инвалидации
+	stopChan        chan struct{}
 }
 
-func NewOrderCache() *OrderCache {
-	return &OrderCache{
+func NewOrderCache(maxSize int, ttl time.Duration) *OrderCache {
+	cache := &OrderCache{
 		cache:           &sync.Map{},
 		cacheTimestamps: make(map[string]time.Time),
+		maxSize:         maxSize,
+		ttl:             ttl,
+		stopChan:        make(chan struct{}),
 	}
+
+	//горутина для очистки устаревших записей
+	go cache.startCleanupWorker()
+
+	return cache
+}
+
+func (oc *OrderCache) startCleanupWorker() {
+	ticker := time.NewTicker(5 * time.Minute)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			oc.Cleanup(oc.ttl)
+		case <-oc.stopChan:
+			return
+		}
+	}
+}
+func (oc *OrderCache) Stop() {
+	close(oc.stopChan)
+	log.Println("Кэш остановлен")
 }
 
 func (oc *OrderCache) Get(orderUID string) (database.Order, bool) {
 	if cached, ok := oc.cache.Load(orderUID); ok {
 		if cachedOrder, ok := cached.(CachedOrder); ok {
+			if time.Since(cachedOrder.CreatedAt) > oc.ttl {
+				oc.Delete(orderUID)
+				return database.Order{}, false
+			}
 			return cachedOrder.Order, true
 		}
 	}
@@ -37,6 +70,10 @@ func (oc *OrderCache) Get(orderUID string) (database.Order, bool) {
 }
 
 func (oc *OrderCache) Set(order database.Order) {
+	if oc.Size() >= oc.maxSize {
+		oc.removeOldest()
+	}
+
 	cachedOrder := CachedOrder{
 		Order:     order,
 		CreatedAt: time.Now(),
@@ -47,6 +84,37 @@ func (oc *OrderCache) Set(order database.Order) {
 	oc.mutex.Lock()
 	oc.cacheTimestamps[order.OrderUID] = time.Now()
 	oc.mutex.Unlock()
+}
+
+func (oc *OrderCache) Delete(orderUID string) {
+	oc.cache.Delete(orderUID)
+	oc.mutex.Lock()
+	delete(oc.cacheTimestamps, orderUID)
+	oc.mutex.Unlock()
+}
+
+func (oc *OrderCache) removeOldest() {
+	oc.mutex.Lock()
+	defer oc.mutex.Unlock()
+
+	if len(oc.cacheTimestamps) == 0 {
+		return
+	}
+
+	var oldestKey string
+	var oldestTime time.Time
+	first := true
+
+	for key, timestamp := range oc.cacheTimestamps {
+		if first || timestamp.Before(oldestTime) {
+			oldestKey = key
+			oldestTime = timestamp
+			first = false
+		}
+	}
+
+	oc.cache.Delete(oldestKey)
+	delete(oc.cacheTimestamps, oldestKey)
 }
 
 func (oc *OrderCache) Size() int {

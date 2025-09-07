@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -10,11 +11,36 @@ import (
 	"time"
 )
 
-func StartHTTPServer(orderService *service.OrderService, port string) {
+func StartHTTPServer(ctx context.Context, orderService *service.OrderService, port string) {
+	server := &http.Server{
+		Addr:    port,
+		Handler: nil,
+	}
+
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("../../static"))))
 	http.HandleFunc("/order/", enableCORS(orderHandler(orderService)))
 	http.HandleFunc("/cache", enableCORS(cacheHandler(orderService)))
 	http.HandleFunc("/health", enableCORS(healthHandler(orderService)))
-	http.HandleFunc("/", enableCORS(staticHandler()))
+	http.HandleFunc("/", enableCORS(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/" {
+			http.ServeFile(w, r, "../../static/index.html")
+			return
+		}
+		http.NotFound(w, r)
+	}))
+
+	go func() {
+		<-ctx.Done()
+		log.Println("Останавливаем HTTP сервер")
+
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+
+		defer cancel()
+
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			log.Printf("Ошибка остановки HTTP сервера: %v", err)
+		}
+	}()
 
 	log.Printf("   HTTP сервер запущен на %s", port)
 	log.Printf("   http://localhost%s/ - веб-интерфейс", port)
@@ -23,7 +49,9 @@ func StartHTTPServer(orderService *service.OrderService, port string) {
 	log.Printf("   http://localhost%s/health - проверка здоровья", port)
 	log.Printf("   http://localhost%s/benchmark/{id} - тест производительности", port)
 
-	http.ListenAndServe(port, nil)
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatalf("Ошибка HTTP сервера: %v", err)
+	}
 }
 
 func orderHandler(orderService *service.OrderService) http.HandlerFunc {

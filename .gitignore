@@ -23,6 +23,7 @@ ehthumbs.db
 Thumbs.db
 *.log
 logs/
+docker-compose.env
 .env
 .env.local
 .env.development.local
