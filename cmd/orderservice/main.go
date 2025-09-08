@@ -39,6 +39,13 @@ func main() {
 		}
 	}()
 
+	// Запуск миграций БД
+	log.Println("Запуск миграций базы данных...")
+	if err := database.RunMigrations(cfg.DB); err != nil {
+		log.Fatalf("Ошибка применения миграций: %v", err)
+	}
+	log.Println("Миграции успешно применены")
+
 	// Создаем репозиторий
 	orderRepo := database.NewOrderRepository(db.DB)
 
