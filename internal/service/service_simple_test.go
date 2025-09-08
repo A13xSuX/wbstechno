@@ -170,3 +170,74 @@ func (m *SimpleCacheMock) Range(f func(key, value interface{}) bool) {
 		}
 	}
 }
+
+// Добавляем тест для validator
+func TestValidatorService(t *testing.T) {
+	validator := NewValidatorService()
+
+	// Тест валидного заказа
+	validOrder := database.Order{
+		OrderUID:    "test123",
+		TrackNumber: "TRACK001",
+		Entry:       "WBIL",
+		Delivery: database.Delivery{
+			Name:    "Test User",
+			Phone:   "+79161234567",
+			Zip:     "123456",
+			City:    "Moscow",
+			Address: "Street 123",
+			Region:  "Moscow",
+			Email:   "test@example.com",
+		},
+		Payment: database.Payment{
+			Transaction:  "b563feb7-b2b8-4b6a-9f5d-123456789abc", // Правильный UUID формат
+			Currency:     "USD",
+			Provider:     "wbpay",
+			Amount:       1817,
+			PaymentDt:    1637907727,
+			Bank:         "alpha",
+			DeliveryCost: 1500,
+			GoodsTotal:   317,
+			CustomFee:    0,
+		},
+		Items: []database.Item{
+			{
+				ChrtID:      9934930,
+				TrackNumber: "WBILMTESTTRACK",
+				Price:       453,
+				Rid:         "ab4219087a764ae0btest123", // alphanum
+				Name:        "Mascaras",
+				Sale:        30,
+				Size:        "0",
+				TotalPrice:  317,
+				NmID:        2389212,
+				Brand:       "Vivienne Sabo",
+				Status:      202,
+			},
+		},
+		Locale:            "en",
+		CustomerID:        "test-customer123", // alphanum с подчеркиванием
+		DeliveryService:   "meest",
+		Shardkey:          "9",
+		SmID:              99,
+		DateCreated:       time.Now(),
+		OofShard:          "1",
+		InternalSignature: "",
+	}
+
+	err := validator.ValidateOrder(validOrder)
+	if err != nil {
+		t.Errorf("Валидный заказ не прошел проверку: %v", err)
+	}
+
+	// Тест невалидного заказа
+	invalidOrder := validOrder
+	invalidOrder.Delivery.Email = "invalid-email"
+
+	err = validator.ValidateOrder(invalidOrder)
+	if err == nil {
+		t.Error("Невалидный заказ прошел проверку")
+	} else {
+		t.Logf("Ожидаемая ошибка валидации: %v", err)
+	}
+}

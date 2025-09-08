@@ -6,21 +6,22 @@ import (
 	"log"
 	"order-service/internal/cache"
 	"order-service/internal/database"
-	"strings"
 	"time"
 )
 
 // OrderServiceImpl реализация интерфейса OrderService
 type OrderServiceImpl struct {
-	repo  database.OrderRepository
-	cache cache.Cache
+	repo      database.OrderRepository
+	cache     cache.Cache
+	validator *ValidatorService
 }
 
 // NewOrderService создает новый сервис заказов
 func NewOrderService(repo database.OrderRepository, cache cache.Cache) *OrderServiceImpl {
 	return &OrderServiceImpl{
-		repo:  repo,
-		cache: cache,
+		repo:      repo,
+		cache:     cache,
+		validator: NewValidatorService(),
 	}
 }
 
@@ -92,6 +93,10 @@ func (s *OrderServiceImpl) ProcessOrder(message []byte) error {
 	return nil
 }
 
+func (s *OrderServiceImpl) ValidateOrder(order database.Order) error {
+	return s.validator.ValidateOrder(order)
+}
+
 // GetOrder возвращает заказ по ID
 func (s *OrderServiceImpl) GetOrder(orderUID string) (database.Order, error) {
 	// Сначала проверяем в кэше
@@ -108,60 +113,6 @@ func (s *OrderServiceImpl) GetOrder(orderUID string) (database.Order, error) {
 	// Сохраняем в кэш для будущих запросов
 	s.cache.Set(order)
 	return order, nil
-}
-
-// ValidateOrder проверяет валидность заказа
-func (s *OrderServiceImpl) ValidateOrder(order database.Order) error {
-	if order.OrderUID == "" {
-		return fmt.Errorf("пустой OrderUID")
-	}
-	if order.TrackNumber == "" {
-		return fmt.Errorf("пустой TrackNumber")
-	}
-	if order.Entry == "" {
-		return fmt.Errorf("пустой Entry")
-	}
-
-	// Валидация доставки
-	if order.Delivery.Name == "" {
-		return fmt.Errorf("пустое имя получателя")
-	}
-	if order.Delivery.Phone == "" {
-		return fmt.Errorf("пустой телефон")
-	}
-
-	// Валидация платежа
-	if order.Payment.Transaction == "" {
-		return fmt.Errorf("пустая транзакция")
-	}
-	if order.Payment.Amount <= 0 {
-		return fmt.Errorf("невалидная сумма платежа: %d", order.Payment.Amount)
-	}
-	if order.Payment.Currency == "" {
-		return fmt.Errorf("пустая валюта")
-	}
-
-	// Валидация товаров
-	if len(order.Items) == 0 {
-		return fmt.Errorf("нет товаров в заказе")
-	}
-	for i, item := range order.Items {
-		if item.Name == "" {
-			return fmt.Errorf("пустое название товара %d", i+1)
-		}
-		if item.Price <= 0 {
-			return fmt.Errorf("невалидная цена товара %d: %d", i+1, item.Price)
-		}
-	}
-
-	// Валидация email (если указан)
-	if order.Delivery.Email != "" {
-		if !strings.Contains(order.Delivery.Email, "@") || !strings.Contains(order.Delivery.Email, ".") {
-			return fmt.Errorf("невалидный email: %s", order.Delivery.Email)
-		}
-	}
-
-	return nil
 }
 
 // GetCacheSize возвращает размер кэша

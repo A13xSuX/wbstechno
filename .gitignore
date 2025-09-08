@@ -35,3 +35,6 @@ coverage.html
 /orderservice
 tmp/
 temp/
+migrations/*.sql
+!migrations/001_initial_schema.up.sql
+!migrations/001_initial_schema.down.sql
