@@ -83,6 +83,7 @@ Zookeeper: localhost:2181
 ### Вариант 1: Все тесты
 ```bash
 go test ./internal/... -v
+```
 
 ### Вариант 2: По компонентам
 ```bash
@@ -93,17 +94,19 @@ go test ./internal/cache/ -v
 go test ./internal/handler/ -v
 
 # Только сервис
-go test ./internal/service/ -v```
-
-Вариант 3: Конкретные тесты
+go test ./internal/service/ -v
+```
+### Вариант 3: Конкретные тесты
 ```bash
 # Только тесты валидации
 go test ./internal/service/ -run TestValidation -v
 
 # Только тесты кэша
-go test ./internal/cache/ -run TestCache -v```
+go test ./internal/cache/ -run TestCache -v
+```
 
-Вариант 4: Через скрипт
+### Вариант 4: Через скрипт
 ```bash
 chmod +x run_simple_tests.sh
-./run_simple_tests.sh```
+./run_simple_tests.sh
+```
