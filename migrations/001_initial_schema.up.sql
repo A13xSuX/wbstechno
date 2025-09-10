@@ -71,7 +71,6 @@ CREATE TABLE IF NOT EXISTS items (
     updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Индексы для улучшения производительности
 CREATE INDEX IF NOT EXISTS idx_orders_order_uid ON orders(order_uid);
 CREATE INDEX IF NOT EXISTS idx_orders_date_created ON orders(date_created);
 CREATE INDEX IF NOT EXISTS idx_delivery_order_uid ON delivery(order_uid);
