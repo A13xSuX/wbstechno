@@ -7,11 +7,11 @@ import (
 )
 
 func TestCacheBasicOperations(t *testing.T) {
-	// Создаем кэш на 5 минут
+	// создаем кэш на 5 минут
 	cache := NewOrderCache(10, 5*time.Minute)
 	defer cache.Stop()
 
-	// Создаем тестовый заказ
+	// создаем тестовый заказ
 	testOrder := database.Order{
 		OrderUID:    "test123",
 		TrackNumber: "TRACK001",
@@ -41,13 +41,13 @@ func TestCacheSize(t *testing.T) {
 	cache := NewOrderCache(3, 10*time.Minute)
 	defer cache.Stop()
 
-	// Добавляем 3 заказа
+	// добавляем 3 заказа
 	for i := 1; i <= 3; i++ {
 		order := database.Order{OrderUID: string(rune('a' + i))}
 		cache.Set(order)
 	}
 
-	// Проверяем размер кэша
+	// проверяем размер кэша
 	size := cache.Size()
 	if size != 3 {
 		t.Errorf("Ожидался размер кэша 3, получен %d", size)
@@ -55,23 +55,23 @@ func TestCacheSize(t *testing.T) {
 }
 
 func TestCacheExpiration(t *testing.T) {
-	// Кэш с очень коротким временем жизни (100ms)
+	// кэш с очень коротким временем жизни (100ms)
 	cache := NewOrderCache(10, 100*time.Millisecond)
 	defer cache.Stop()
 
 	order := database.Order{OrderUID: "test456"}
 	cache.Set(order)
 
-	// Сразу после добавления должен быть в кэше
+	// сразу после добавления должен быть в кэше
 	_, found := cache.Get("test456")
 	if !found {
 		t.Error("Заказ не найден сразу после добавления")
 	}
 
-	// Ждем пока истечет TTL
+	// ждем пока истечет TTL
 	time.Sleep(150 * time.Millisecond)
 
-	// После истечения TTL не должен быть в кэше
+	// после истечения TTL не должен быть в кэше
 	_, found = cache.Get("test456")
 	if found {
 		t.Error("Заказ все еще в кэше после истечения TTL")

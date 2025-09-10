@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// Простой тест валидации заказа
+// простой тест валидации заказа
 func TestValidation(t *testing.T) {
 	service := &OrderServiceImpl{}
 
@@ -72,14 +72,14 @@ func TestJSONParsing(t *testing.T) {
 		]
 	}`
 
-	// Проверяем только парсинг JSON
+	// проверяем только парсинг JSON
 	var order database.Order
 	err := json.Unmarshal([]byte(validJSON), &order)
 	if err != nil {
 		t.Errorf("Ошибка парсинга валидного JSON: %v", err)
 	}
 
-	// Проверяем что данные распарсились правильно
+	// проверяем что данные распарсились правильно
 	if order.OrderUID != "test123" {
 		t.Errorf("Ожидался OrderUID 'test123', получен '%s'", order.OrderUID)
 	}
@@ -87,7 +87,7 @@ func TestJSONParsing(t *testing.T) {
 		t.Errorf("Ожидался TrackNumber 'TRACK001', получен '%s'", order.TrackNumber)
 	}
 
-	// Тест невалидного JSON
+	// тест невалидного JSON
 	invalidJSON := `{invalid json`
 	err = json.Unmarshal([]byte(invalidJSON), &order)
 	if err == nil {
@@ -95,7 +95,7 @@ func TestJSONParsing(t *testing.T) {
 	}
 }
 
-// Тест пустого сообщения
+// тест пустого сообщения
 func TestEmptyMessage(t *testing.T) {
 	service := &OrderServiceImpl{}
 
@@ -107,21 +107,21 @@ func TestEmptyMessage(t *testing.T) {
 	}
 }
 
-// Тест получения заказа из кэша (упрощенный)
+// тест получения заказа из кэша (упрощенный)
 func TestGetOrderFromCache(t *testing.T) {
-	// Создаем простой mock кэша
+	// создаем простой mock кэша
 	cache := &SimpleCacheMock{}
 
-	// Создаем сервис только с кэшем (репозиторий nil)
+	// создаем сервис только с кэшем (репозиторий nil)
 	service := &OrderServiceImpl{
 		cache: cache,
 	}
 
-	// Добавляем заказ в кэш
+	// добавляем заказ в кэш
 	testOrder := database.Order{OrderUID: "cache123", TrackNumber: "FROM_CACHE"}
 	cache.Set(testOrder)
 
-	// Должен получить из кэша
+	// должен получить из кэша
 	order, err := service.GetOrder("cache123")
 	if err != nil {
 		t.Errorf("Ошибка при получении заказа: %v", err)
@@ -131,7 +131,7 @@ func TestGetOrderFromCache(t *testing.T) {
 	}
 }
 
-// Простой mock для кэша
+// простой mock для кэша
 type SimpleCacheMock struct {
 	storage map[string]database.Order
 }
@@ -161,17 +161,16 @@ func (m *SimpleCacheMock) Cleanup(ttl time.Duration) {}
 
 func (m *SimpleCacheMock) Stop() {}
 
-// ИСПРАВЛЕННАЯ СИГНАТУРА: правильный возвращаемый тип
 func (m *SimpleCacheMock) Range(f func(key, value interface{}) bool) {
 	for k, v := range m.storage {
-		// Вызываем функцию и проверяем нужно ли продолжать
+		//проверяем нужно ли продолжать
 		if !f(k, v) {
 			break
 		}
 	}
 }
 
-// Добавляем тест для validator
+// добавляем тест для validator
 func TestValidatorService(t *testing.T) {
 	validator := NewValidatorService()
 
@@ -190,7 +189,7 @@ func TestValidatorService(t *testing.T) {
 			Email:   "test@example.com",
 		},
 		Payment: database.Payment{
-			Transaction:  "b563feb7-b2b8-4b6a-9f5d-123456789abc", // Правильный UUID формат
+			Transaction:  "b563feb7-b2b8-4b6a-9f5d-123456789abc",
 			Currency:     "USD",
 			Provider:     "wbpay",
 			Amount:       1817,
@@ -205,7 +204,7 @@ func TestValidatorService(t *testing.T) {
 				ChrtID:      9934930,
 				TrackNumber: "WBILMTESTTRACK",
 				Price:       453,
-				Rid:         "ab4219087a764ae0btest123", // alphanum
+				Rid:         "ab4219087a764ae0btest123",
 				Name:        "Mascaras",
 				Sale:        30,
 				Size:        "0",
@@ -216,7 +215,7 @@ func TestValidatorService(t *testing.T) {
 			},
 		},
 		Locale:            "en",
-		CustomerID:        "test-customer123", // alphanum с подчеркиванием
+		CustomerID:        "test-customer123",
 		DeliveryService:   "meest",
 		Shardkey:          "9",
 		SmID:              99,
@@ -230,7 +229,7 @@ func TestValidatorService(t *testing.T) {
 		t.Errorf("Валидный заказ не прошел проверку: %v", err)
 	}
 
-	// Тест невалидного заказа
+	// тест невалидного заказа
 	invalidOrder := validOrder
 	invalidOrder.Delivery.Email = "invalid-email"
 

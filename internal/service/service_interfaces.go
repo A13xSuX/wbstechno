@@ -5,14 +5,14 @@ import (
 	"time"
 )
 
-// OrderProcessor интерфейс для обработки заказов
+// интерфейс для обработки заказов
 type OrderProcessor interface {
 	ProcessOrder(message []byte) error
 	GetOrder(orderUID string) (database.Order, error)
 	ValidateOrder(order database.Order) error
 }
 
-// OrderService интерфейс сервиса заказов
+// интерфейс сервиса заказов
 type OrderService interface {
 	OrderProcessor
 	GetCacheSize() int

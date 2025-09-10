@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// Database интерфейс для работы с БД
+// интерфейс для работы с БД
 type Database interface {
 	ConnectDB(cfg config.DatabaseConfig) (*DB, error)
 	CloseWithTimeout(timeout time.Duration) error
@@ -19,7 +19,7 @@ type Database interface {
 	SetMaxIdleConns(n int)
 }
 
-// OrderRepository интерфейс для работы с заказами
+// интерфейс для работы с заказами
 type OrderRepository interface {
 	GetDB() *sql.DB
 	SaveOrder(tx *sql.Tx, order Order) error

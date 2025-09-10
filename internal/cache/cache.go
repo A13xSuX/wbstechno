@@ -14,7 +14,7 @@ type CachedOrder struct {
 	CreatedAt time.Time
 }
 
-// OrderCache реализация интерфейса Cache
+// реализация интерфейса Cache
 type OrderCache struct {
 	cache           *sync.Map
 	cacheTimestamps map[string]time.Time
@@ -24,7 +24,7 @@ type OrderCache struct {
 	stopChan        chan struct{}
 }
 
-// NewOrderCache создает новый кэш
+// создаем новый кэш
 func NewOrderCache(maxSize int, ttl time.Duration) Cache {
 	cache := &OrderCache{
 		cache:           &sync.Map{},
@@ -39,7 +39,7 @@ func NewOrderCache(maxSize int, ttl time.Duration) Cache {
 	return cache
 }
 
-// Get возвращает заказ из кэша
+// возвращает заказ из кэша
 func (oc *OrderCache) Get(orderUID string) (database.Order, bool) {
 	if cached, ok := oc.cache.Load(orderUID); ok {
 		if cachedOrder, ok := cached.(CachedOrder); ok {
@@ -53,7 +53,7 @@ func (oc *OrderCache) Get(orderUID string) (database.Order, bool) {
 	return database.Order{}, false
 }
 
-// Set добавляет заказ в кэш
+// добавляет заказ в кэш
 func (oc *OrderCache) Set(order database.Order) {
 	if oc.Size() >= oc.maxSize {
 		oc.removeOldest()
@@ -71,7 +71,7 @@ func (oc *OrderCache) Set(order database.Order) {
 	oc.mutex.Unlock()
 }
 
-// Delete удаляет заказ из кэша
+// удаляет заказ из кэша
 func (oc *OrderCache) Delete(orderUID string) {
 	oc.cache.Delete(orderUID)
 	oc.mutex.Lock()
@@ -79,7 +79,7 @@ func (oc *OrderCache) Delete(orderUID string) {
 	oc.mutex.Unlock()
 }
 
-// Size возвращает размер кэша
+// возвращает размер кэша
 func (oc *OrderCache) Size() int {
 	count := 0
 	oc.cache.Range(func(key, value interface{}) bool {
@@ -89,7 +89,7 @@ func (oc *OrderCache) Size() int {
 	return count
 }
 
-// Cleanup очищает устаревшие записи
+// очищает устаревшие записи
 func (oc *OrderCache) Cleanup(ttl time.Duration) {
 	oc.mutex.Lock()
 	defer oc.mutex.Unlock()
@@ -103,13 +103,13 @@ func (oc *OrderCache) Cleanup(ttl time.Duration) {
 	}
 }
 
-// Stop останавливает кэш
+// останавливает кэш
 func (oc *OrderCache) Stop() {
 	close(oc.stopChan)
 	log.Println("Кэш остановлен")
 }
 
-// Range итерируется по элементам кэша
+// итерируется по элементам кэша
 func (oc *OrderCache) Range(f func(key, value interface{}) bool) {
 	oc.cache.Range(f)
 }
@@ -153,7 +153,7 @@ func (oc *OrderCache) removeOldest() {
 	delete(oc.cacheTimestamps, oldestKey)
 }
 
-// RestoreCacheFromDB реализация интерфейса CacheRestorer
+// реализация интерфейса CacheRestorer
 func RestoreCacheFromDB(db *sql.DB, cache Cache, limit int) error {
 	fmt.Printf("Восстановление кэша, лимит: %d\n", limit)
 	query := `

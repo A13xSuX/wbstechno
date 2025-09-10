@@ -39,26 +39,26 @@ func main() {
 		}
 	}()
 
-	// Запуск миграций БД
+	// запуск миграций БД
 	log.Println("Запуск миграций базы данных...")
 	if err := database.RunMigrations(cfg.DB); err != nil {
 		log.Fatalf("Ошибка применения миграций: %v", err)
 	}
 	log.Println("Миграции успешно применены")
 
-	// Создаем репозиторий
+	// cоздаем репозиторий
 	orderRepo := database.NewOrderRepository(db.DB)
 
-	// Создаем кэш
+	// cоздаем кэш
 	orderCache := cache.NewOrderCache(cfg.Cache.MaxSize, cfg.Cache.TTL)
 	defer orderCache.Stop()
 
-	// Восстанавливаем кэш из БД
+	// восстанавливаем кэш из БД
 	if err := cache.RestoreCacheFromDB(db.DB, orderCache, cfg.Cache.RestoreLimit); err != nil {
 		log.Printf("Ошибка восстановления кэша: %v", err)
 	}
 
-	// Создаем сервис
+	// cоздаем сервис
 	orderService := service.NewOrderService(orderRepo, orderCache)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -66,14 +66,14 @@ func main() {
 
 	var wg sync.WaitGroup
 
-	// Запускаем HTTP сервер
+	// запускаем HTTP сервер
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		handler.StartHTTPServer(ctx, orderService, cfg.HTTP.Port)
 	}()
 
-	// Запускаем Kafka consumer
+	// запускаем Kafka
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -82,7 +82,7 @@ func main() {
 
 	log.Println("Для остановки нажмите Ctrl+C")
 
-	// Ожидание сигналов завершения
+	// ожидание сигналов завершения
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 

@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"order-service/internal/service"
-	"path/filepath"
 	"time"
 )
 
@@ -53,7 +52,6 @@ func StartHTTPServer(ctx context.Context, orderService service.OrderService, por
 	}
 }
 
-// ИСПРАВЛЕНО: service.OrderService вместо service.OrderServiceImpl
 func orderHandler(orderService service.OrderService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -88,7 +86,6 @@ func orderHandler(orderService service.OrderService) http.HandlerFunc {
 	}
 }
 
-// ИСПРАВЛЕНО: service.OrderService вместо service.OrderServiceImpl
 func cacheHandler(orderService service.OrderService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -108,7 +105,6 @@ func cacheHandler(orderService service.OrderService) http.HandlerFunc {
 	}
 }
 
-// ИСПРАВЛЕНО: service.OrderService вместо service.OrderServiceImpl
 func healthHandler(orderService service.OrderService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -135,23 +131,6 @@ func healthHandler(orderService service.OrderService) http.HandlerFunc {
 		}
 
 		json.NewEncoder(w).Encode(healthStatus)
-	}
-}
-
-func staticHandler() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/" {
-			http.ServeFile(w, r, "static/index.html")
-			return
-		}
-
-		ext := filepath.Ext(r.URL.Path)
-		if ext == ".html" || ext == ".css" || ext == ".js" || ext == ".png" || ext == ".jpg" {
-			http.ServeFile(w, r, "static"+r.URL.Path)
-			return
-		}
-
-		http.NotFound(w, r)
 	}
 }
 

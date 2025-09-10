@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// Простой mock сервиса, реализующий интерфейс service.OrderService
+// простой mock сервиса, реализующий интерфейс service.OrderService
 type MockOrderService struct {
 	orders map[string]database.Order
 }
@@ -44,7 +44,7 @@ func NewMockOrderService() *MockOrderService {
 func (m *MockOrderService) GetOrder(orderUID string) (database.Order, error) {
 	order, exists := m.orders[orderUID]
 	if !exists {
-		return database.Order{}, fmt.Errorf("order not found") // ВОТ ИСПРАВЛЕНИЕ!
+		return database.Order{}, fmt.Errorf("Заказ не найден!")
 	}
 	return order, nil
 }
@@ -70,26 +70,26 @@ func (m *MockOrderService) RunBenchmark(orderUID string) (map[string]time.Durati
 }
 
 func (m *MockOrderService) PrintCacheContents() {
-	// Пустая реализация для тестов
+	// пустая реализация для тестов
 }
 
 func TestOrderHandlerFound(t *testing.T) {
 	service := NewMockOrderService()
 	handler := orderHandler(service)
 
-	// Создаем тестовый запрос
+	// создаем тестовый запрос
 	req := httptest.NewRequest("GET", "/order/found123", nil)
 	w := httptest.NewRecorder()
 
-	// Вызываем хендлер
+	// вызываем хендлер
 	handler(w, req)
 
-	// Проверяем ответ
+	// проверяем ответ
 	if w.Code != http.StatusOK {
 		t.Errorf("Ожидался статус 200, получен %d", w.Code)
 	}
 
-	// Проверяем содержимое ответа
+	// проверяем содержимое ответа
 	var response database.Order
 	err := json.NewDecoder(w.Body).Decode(&response)
 	if err != nil {

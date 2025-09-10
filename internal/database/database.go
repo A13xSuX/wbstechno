@@ -15,7 +15,7 @@ type DB struct {
 	*sql.DB
 }
 
-// ConnectDB реализация интерфейса Database
+// реализация интерфейса Database
 func ConnectDB(cfg config.DatabaseConfig) (*DB, error) {
 	connStr := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%s sslmode=%s",
 		cfg.User, cfg.Password, cfg.DBName, cfg.Host, cfg.Port, cfg.SSLMode)
@@ -40,7 +40,7 @@ func ConnectDB(cfg config.DatabaseConfig) (*DB, error) {
 	return &DB{sqlDB}, nil
 }
 
-// CloseWithTimeout реализация интерфейса Database
+// реализация закрытия Database
 func (db *DB) CloseWithTimeout(timeout time.Duration) error {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -60,22 +60,21 @@ func (db *DB) CloseWithTimeout(timeout time.Duration) error {
 	}
 }
 
-// OrderRepositoryImpl реализация интерфейса OrderRepository
 type OrderRepositoryImpl struct {
 	db *sql.DB
 }
 
-// NewOrderRepository создает новую реализацию репозитория
+// создает новую реализацию репозитория
 func NewOrderRepository(db *sql.DB) OrderRepository {
 	return &OrderRepositoryImpl{db: db}
 }
 
-// GetDB возвращает соединение с БД
+// возвращает соединение с БД
 func (r *OrderRepositoryImpl) GetDB() *sql.DB {
 	return r.db
 }
 
-// SaveOrder сохраняет заказ в БД
+// сохраняет заказ в БД
 func (r *OrderRepositoryImpl) SaveOrder(tx *sql.Tx, order Order) error {
 	query := `INSERT INTO orders (
 		order_uid, track_number, entry, locale, internal_signature, 
@@ -102,7 +101,7 @@ func (r *OrderRepositoryImpl) SaveOrder(tx *sql.Tx, order Order) error {
 	return nil
 }
 
-// SaveDelivery сохраняет данные доставки
+// сохраняет данные доставки
 func (r *OrderRepositoryImpl) SaveDelivery(tx *sql.Tx, order Order) error {
 	query := `INSERT INTO delivery (
 		order_uid, name, phone, zip, city, address, region, email
@@ -125,7 +124,7 @@ func (r *OrderRepositoryImpl) SaveDelivery(tx *sql.Tx, order Order) error {
 	return nil
 }
 
-// SavePayment сохраняет данные платежа
+// сохраняет данные платежа
 func (r *OrderRepositoryImpl) SavePayment(tx *sql.Tx, order Order) error {
 	query := `INSERT INTO payment (
 		order_uid, transaction, request_id, currency, provider, amount, 
@@ -152,7 +151,7 @@ func (r *OrderRepositoryImpl) SavePayment(tx *sql.Tx, order Order) error {
 	return nil
 }
 
-// SaveItems сохраняет товары заказа
+// сохраняет товары заказа
 func (r *OrderRepositoryImpl) SaveItems(tx *sql.Tx, order Order) error {
 	query := `INSERT INTO items (
 		order_uid, chrt_id, track_number, price, rid, name, 
@@ -182,7 +181,7 @@ func (r *OrderRepositoryImpl) SaveItems(tx *sql.Tx, order Order) error {
 	return nil
 }
 
-// GetOrder получает заказ из БД
+// получает заказ из БД
 func (r *OrderRepositoryImpl) GetOrder(orderUID string) (Order, error) {
 	var order Order
 
@@ -222,7 +221,7 @@ func (r *OrderRepositoryImpl) GetOrder(orderUID string) (Order, error) {
 	return order, nil
 }
 
-// LoadOrderItems загружает товары для заказа
+// загружает товары для заказа
 func (r *OrderRepositoryImpl) LoadOrderItems(order *Order) error {
 	query := `
 		SELECT chrt_id, track_number, price, rid, name, 
@@ -254,7 +253,6 @@ func (r *OrderRepositoryImpl) LoadOrderItems(order *Order) error {
 	return nil
 }
 
-// CheckConnection проверяет соединение с БД
 func (r *OrderRepositoryImpl) CheckConnection() error {
 	return r.db.Ping()
 }

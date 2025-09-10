@@ -5,25 +5,25 @@ import (
 )
 
 type Order struct {
-	OrderUID          string    `json:"order_uid" validate:"required,alphanumdash"`    // ИЗМЕНЕНО
-	TrackNumber       string    `json:"track_number" validate:"required,alphanumdash"` // ИЗМЕНЕНО
+	OrderUID          string    `json:"order_uid" validate:"required,alphanumdash"`
+	TrackNumber       string    `json:"track_number" validate:"required,alphanumdash"`
 	Entry             string    `json:"entry" validate:"required,alpha"`
 	Delivery          Delivery  `json:"delivery" validate:"required"`
 	Payment           Payment   `json:"payment" validate:"required"`
 	Items             []Item    `json:"items" validate:"required,min=1,dive"`
 	Locale            string    `json:"locale" validate:"required,alpha"`
 	InternalSignature string    `json:"internal_signature" validate:"omitempty"`
-	CustomerID        string    `json:"customer_id" validate:"required,alphanumdash"` // ИЗМЕНЕНО
+	CustomerID        string    `json:"customer_id" validate:"required,alphanumdash"`
 	DeliveryService   string    `json:"delivery_service" validate:"required,alpha"`
-	Shardkey          string    `json:"shardkey" validate:"required,alphanumdash"` // ИЗМЕНЕНО
+	Shardkey          string    `json:"shardkey" validate:"required,alphanumdash"`
 	SmID              int       `json:"sm_id" validate:"required,min=0"`
 	DateCreated       time.Time `json:"date_created" validate:"required"`
-	OofShard          string    `json:"oof_shard" validate:"required,alphanumdash"` // ИЗМЕНЕНО
+	OofShard          string    `json:"oof_shard" validate:"required,alphanumdash"`
 }
 
 type Delivery struct {
 	Name    string `json:"name" validate:"required,min=2"`
-	Phone   string `json:"phone" validate:"required,e164"` // E.164 format: +1234567890
+	Phone   string `json:"phone" validate:"required,e164"`
 	Zip     string `json:"zip" validate:"required,numeric"`
 	City    string `json:"city" validate:"required,alphaunicode"`
 	Address string `json:"address" validate:"required,min=5"`
@@ -32,7 +32,7 @@ type Delivery struct {
 }
 
 type Payment struct {
-	Transaction  string `json:"transaction" validate:"required,uuid"` // UUID format
+	Transaction  string `json:"transaction" validate:"required,uuid"`
 	RequestID    string `json:"request_id" validate:"omitempty"`
 	Currency     string `json:"currency" validate:"required,alpha,uppercase,min=3,max=3"`
 	Provider     string `json:"provider" validate:"required,alpha"`

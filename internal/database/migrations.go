@@ -11,13 +11,13 @@ import (
 	"strings"
 )
 
-// buildConnectionString создает строку подключения к БД
+// создает строку подключения к БД
 func buildConnectionString(dbConfig config.DatabaseConfig) string {
 	return fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%s sslmode=%s",
 		dbConfig.User, dbConfig.Password, dbConfig.DBName, dbConfig.Host, dbConfig.Port, dbConfig.SSLMode)
 }
 
-// createMigrationsTable создает таблицу для отслеживания миграций
+// создает таблицу для отслеживания миграций
 func createMigrationsTable(db *sql.DB) error {
 	query := `
 		CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -30,7 +30,7 @@ func createMigrationsTable(db *sql.DB) error {
 	return err
 }
 
-// getAppliedMigrations возвращает список примененных миграций
+// возвращает список примененных миграций
 func getAppliedMigrations(db *sql.DB) (map[int]bool, error) {
 	rows, err := db.Query("SELECT version FROM schema_migrations ORDER BY version")
 	if err != nil {
@@ -49,7 +49,7 @@ func getAppliedMigrations(db *sql.DB) (map[int]bool, error) {
 	return applied, nil
 }
 
-// getAvailableMigrations возвращает доступные миграции
+// возвращает доступные миграции
 func getAvailableMigrations() ([]Migration, error) {
 	files, err := filepath.Glob("migrations/*.sql")
 	if err != nil {
@@ -80,7 +80,6 @@ func getAvailableMigrations() ([]Migration, error) {
 		migrations[version] = migration
 	}
 
-	// Convert to slice and sort
 	result := make([]Migration, 0, len(migrations))
 	for _, m := range migrations {
 		result = append(result, m)
@@ -93,11 +92,11 @@ func getAvailableMigrations() ([]Migration, error) {
 	return result, nil
 }
 
-// applyMigration применяет одну миграцию
+// применяет одну миграцию
 func applyMigration(db *sql.DB, migration Migration) error {
 	content, err := os.ReadFile(migration.UpFile)
 	if err != nil {
-		return fmt.Errorf("failed to read migration file: %v", err)
+		return fmt.Errorf("не удалось прочитать файл миграций: %v", err)
 	}
 
 	tx, err := db.Begin()
@@ -106,12 +105,11 @@ func applyMigration(db *sql.DB, migration Migration) error {
 	}
 	defer tx.Rollback()
 
-	// Execute migration
 	if _, err := tx.Exec(string(content)); err != nil {
-		return fmt.Errorf("failed to execute migration: %v", err)
+		return fmt.Errorf("ошибка выполнения миграций: %v", err)
 	}
 
-	// Record migration
+	// запись миграции
 	_, err = tx.Exec("INSERT INTO schema_migrations (version, name) VALUES ($1, $2)",
 		migration.Version, migration.Name)
 	if err != nil {
@@ -121,16 +119,16 @@ func applyMigration(db *sql.DB, migration Migration) error {
 	return tx.Commit()
 }
 
-// applyAllMigrations применяет все pending миграции
+// применяет все ожидающие миграции
 func applyAllMigrations(db *sql.DB) {
 	applied, err := getAppliedMigrations(db)
 	if err != nil {
-		log.Fatalf("Failed to get applied migrations: %v", err)
+		log.Fatalf("Не удалось получить примененные миграции: %v", err)
 	}
 
 	available, err := getAvailableMigrations()
 	if err != nil {
-		log.Fatalf("Failed to get available migrations: %v", err)
+		log.Fatalf("Не удалось получить доступные миграции: %v", err)
 	}
 
 	appliedCount := 0
@@ -139,23 +137,23 @@ func applyAllMigrations(db *sql.DB) {
 			continue
 		}
 
-		log.Printf("Applying migration: %d_%s", migration.Version, migration.Name)
+		log.Printf("Применение миграции: %d_%s", migration.Version, migration.Name)
 		if err := applyMigration(db, migration); err != nil {
-			log.Fatalf("Failed to apply migration %d: %v", migration.Version, err)
+			log.Fatalf("Не удалось применить миграцию %d: %v", migration.Version, err)
 		}
 
 		appliedCount++
-		log.Printf("Successfully applied migration: %d_%s", migration.Version, migration.Name)
+		log.Printf("Миграция применена: %d_%s", migration.Version, migration.Name)
 	}
 
 	if appliedCount == 0 {
-		log.Println("No migrations to apply")
+		log.Println("Нет миграций для применения")
 	} else {
-		log.Printf("Applied %d migration(s)", appliedCount)
+		log.Printf("Применено %d миграция/миграций", appliedCount)
 	}
 }
 
-// Migration представляет структуру миграции
+// структура миграции
 type Migration struct {
 	Version  int
 	Name     string
@@ -163,20 +161,19 @@ type Migration struct {
 	DownFile string
 }
 
-// RunMigrations применяет все миграции при запуске приложения
+// применяет все миграции при запуске приложения
 func RunMigrations(cfg config.DatabaseConfig) error {
 	db, err := sql.Open("postgres", buildConnectionString(cfg))
 	if err != nil {
-		return fmt.Errorf("failed to connect to database: %v", err)
+		return fmt.Errorf("Не удалось подключиться к бд: %v", err)
 	}
 	defer db.Close()
 
-	// Ensure migrations table exists
 	if err := createMigrationsTable(db); err != nil {
-		return fmt.Errorf("failed to create migrations table: %v", err)
+		return fmt.Errorf("Ошибка создания файла миграций: %v", err)
 	}
 
-	log.Println("Applying database migrations...")
+	log.Println("Применение миграцй")
 	applyAllMigrations(db)
 	return nil
 }

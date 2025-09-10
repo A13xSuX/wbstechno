@@ -9,14 +9,14 @@ import (
 	"time"
 )
 
-// OrderServiceImpl реализация интерфейса OrderService
+// реализация интерфейса OrderService
 type OrderServiceImpl struct {
 	repo      database.OrderRepository
 	cache     cache.Cache
 	validator *ValidatorService
 }
 
-// NewOrderService создает новый сервис заказов
+// создает новый сервис заказов
 func NewOrderService(repo database.OrderRepository, cache cache.Cache) *OrderServiceImpl {
 	return &OrderServiceImpl{
 		repo:      repo,
@@ -25,7 +25,7 @@ func NewOrderService(repo database.OrderRepository, cache cache.Cache) *OrderSer
 	}
 }
 
-// ProcessOrder обрабатывает входящее сообщение с заказом
+// обрабатывает входящее сообщение с заказом
 func (s *OrderServiceImpl) ProcessOrder(message []byte) error {
 	var order database.Order
 
@@ -45,7 +45,7 @@ func (s *OrderServiceImpl) ProcessOrder(message []byte) error {
 		return fmt.Errorf("невалидный заказ: %v", err)
 	}
 
-	// Получаем соединение из репозитория
+	// получаем соединение из репозитория
 	db := s.repo.GetDB()
 	tx, err := db.Begin()
 	if err != nil {
@@ -58,7 +58,7 @@ func (s *OrderServiceImpl) ProcessOrder(message []byte) error {
 		}
 	}()
 
-	// Сохраняем заказ через репозиторий
+	// сохраняем заказ через репозиторий
 	if err := s.repo.SaveOrder(tx, order); err != nil {
 		return fmt.Errorf("ошибка сохранения заказа: %v", err)
 	}
@@ -79,7 +79,7 @@ func (s *OrderServiceImpl) ProcessOrder(message []byte) error {
 		return fmt.Errorf("ошибка коммита транзакции: %v", err)
 	}
 
-	// Сохраняем в кэш
+	// сохраняем в кэш
 	s.cache.Set(order)
 
 	fmt.Printf("   Обработка заказа: %s\n", order.OrderUID)
@@ -97,49 +97,49 @@ func (s *OrderServiceImpl) ValidateOrder(order database.Order) error {
 	return s.validator.ValidateOrder(order)
 }
 
-// GetOrder возвращает заказ по ID
+// возвращает заказ по ID
 func (s *OrderServiceImpl) GetOrder(orderUID string) (database.Order, error) {
-	// Сначала проверяем в кэше
+	// сначала проверяем в кэше
 	if order, found := s.cache.Get(orderUID); found {
 		return order, nil
 	}
 
-	// Если нет в кэше, ищем в БД через репозиторий
+	// если нет в кэше, ищем в БД через репозиторий
 	order, err := s.repo.GetOrder(orderUID)
 	if err != nil {
 		return database.Order{}, err
 	}
 
-	// Сохраняем в кэш для будущих запросов
+	// сохраняем в кэш для будущих запросов
 	s.cache.Set(order)
 	return order, nil
 }
 
-// GetCacheSize возвращает размер кэша
+// возвращает размер кэша
 func (s *OrderServiceImpl) GetCacheSize() int {
 	return s.cache.Size()
 }
 
-// CheckDBConnection проверяет соединение с БД
+// проверяет соединение с БД
 func (s *OrderServiceImpl) CheckDBConnection() error {
 	return s.repo.CheckConnection()
 }
 
-// RunBenchmark запускает бенчмарк-тест
+// запускает бенчмарк-тест
 func (s *OrderServiceImpl) RunBenchmark(orderUID string) (map[string]time.Duration, error) {
 	results := map[string]time.Duration{
 		"cache": 0,
 		"db":    0,
 	}
 
-	// Тест кэша
+	// тест кэша
 	start := time.Now()
 	for i := 0; i < 1000; i++ {
 		s.cache.Get(orderUID)
 	}
 	results["cache"] = time.Since(start)
 
-	// Тест БД
+	// тест БД
 	start = time.Now()
 	for i := 0; i < 1000; i++ {
 		_, err := s.repo.GetOrder(orderUID)
@@ -152,7 +152,7 @@ func (s *OrderServiceImpl) RunBenchmark(orderUID string) (map[string]time.Durati
 	return results, nil
 }
 
-// PrintCacheContents выводит содержимое кэша
+// выводит содержимое кэша
 func (s *OrderServiceImpl) PrintCacheContents() {
 	fmt.Println("Содержимое кэша:")
 	count := 0

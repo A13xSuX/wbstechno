@@ -17,7 +17,7 @@ type ValidatorService struct {
 func NewValidatorService() *ValidatorService {
 	v := validator.New()
 
-	// Регистрируем кастомные валидации
+	// регистрируем кастомные валидации
 	v.RegisterTagNameFunc(func(fld reflect.StructField) string {
 		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
 		if name == "-" {
@@ -26,10 +26,9 @@ func NewValidatorService() *ValidatorService {
 		return name
 	})
 
-	// Регистрируем кастомную валидацию для alphanum с дефисами
+	// для alphanum с дефисами
 	v.RegisterValidation("alphanumdash", func(fl validator.FieldLevel) bool {
 		value := fl.Field().String()
-		// Разрешаем буквы, цифры, дефисы и подчеркивания
 		matched, _ := regexp.MatchString(`^[a-zA-Z0-9\-_]+$`, value)
 		return matched
 	})
@@ -37,7 +36,6 @@ func NewValidatorService() *ValidatorService {
 	return &ValidatorService{validate: v}
 }
 
-// ValidateOrder validates order using go-playground/validator
 func (vs *ValidatorService) ValidateOrder(order database.Order) error {
 	err := vs.validate.Struct(order)
 	if err != nil {
@@ -46,7 +44,6 @@ func (vs *ValidatorService) ValidateOrder(order database.Order) error {
 	return nil
 }
 
-// formatValidationError formats validation errors to user-friendly messages
 func (vs *ValidatorService) formatValidationError(err error) error {
 	if validationErrors, ok := err.(validator.ValidationErrors); ok {
 		var errorMessages []string
@@ -82,14 +79,12 @@ func (vs *ValidatorService) formatValidationError(err error) error {
 			errorMessages = append(errorMessages, message)
 		}
 
-		// Исправлено: используем strings.Join для создания строки
 		return fmt.Errorf("%s", strings.Join(errorMessages, "; "))
 	}
 
 	return err
 }
 
-// ValidateStruct validates any struct using validator
 func (vs *ValidatorService) ValidateStruct(s interface{}) error {
 	return vs.validate.Struct(s)
 }
